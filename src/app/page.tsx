@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { ChatMessage } from '@/types/llama';
+import Navigation from '@/components/Navigation';
 
 export default function Home() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -143,20 +144,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-gray-100">
-      {/* Header */}
-      <div className="border-b border-gray-800 bg-[#161b22]">
-        <div className="max-w-5xl mx-auto px-6 py-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-[#238636] rounded-md flex items-center justify-center">
-              <span className="text-white text-sm font-medium">L</span>
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold text-gray-100">Llama Vision</h1>
-              <p className="text-sm text-gray-400">Llama-4-Maverick-17B-128E-Instruct-FP8</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Navigation */}
+      <Navigation />
 
       <div className="max-w-5xl mx-auto">
         {/* Main Content */}

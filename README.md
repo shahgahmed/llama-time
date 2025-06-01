@@ -23,7 +23,7 @@ A modern Next.js application for testing the Llama-4-Maverick-17B-128E-Instruct-
 2. **Set up your environment variables:**
    The `.env.local` file should already contain your API key:
    ```
-   LLAMA_API_KEY=LLM|1205638627725509|dVOmjaPkBvvjyDKsBWj0kbvZ_7s
+   LLAMA_API_KEY=????
    ```
 
 3. **Run the development server:**
