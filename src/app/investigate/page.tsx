@@ -1,14 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
-import { Dashboard } from '@/types/datadog';
+import { Dashboard } from '@/types/dashboard';
 
 interface InvestigationResult {
   success: boolean;
   investigation: string;
   dashboard?: Dashboard;
-  dashboardUrl?: string;
 }
 
 export default function InvestigatePage() {
@@ -16,6 +16,7 @@ export default function InvestigatePage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<InvestigationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const investigateMonitor = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,10 +42,24 @@ export default function InvestigatePage() {
       }
 
       setResult(data);
+      
+      // Store dashboard in localStorage for viewing
+      if (data.dashboard) {
+        localStorage.setItem(`dashboard-${data.dashboard.id}`, JSON.stringify(data.dashboard));
+        
+        // Automatically redirect to the dashboard
+        router.push(`/dashboard/${data.dashboard.id}`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const viewDashboard = () => {
+    if (result?.dashboard) {
+      router.push(`/dashboard/${result.dashboard.id}`);
     }
   };
 
@@ -136,21 +151,17 @@ export default function InvestigatePage() {
                       </p>
                     </div>
 
-                    {result.dashboardUrl && (
-                      <div className="pt-4">
-                        <a
-                          href={result.dashboardUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center px-4 py-2 bg-[#238636] hover:bg-[#2ea043] text-white rounded-lg transition-colors"
-                        >
-                          View Dashboard in Datadog
-                          <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </a>
-                      </div>
-                    )}
+                    <div className="pt-4">
+                      <button
+                        onClick={viewDashboard}
+                        className="inline-flex items-center px-4 py-2 bg-[#238636] hover:bg-[#2ea043] text-white rounded-lg transition-colors"
+                      >
+                        View Dashboard
+                        <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -178,9 +189,15 @@ export default function InvestigatePage() {
               <li>Enter a Datadog monitor ID from a firing alert</li>
               <li>The AI analyzes the monitor configuration and context</li>
               <li>It creates a custom dashboard with relevant metrics, logs, and visualizations</li>
-              <li>The dashboard is automatically created in your Datadog account</li>
+              <li>View the dashboard with real-time data from Datadog</li>
               <li>Use the dashboard to investigate and resolve the incident</li>
             </ol>
+            
+            <div className="mt-4 p-3 bg-blue-900/20 border border-blue-800/30 rounded">
+              <p className="text-blue-300 text-sm">
+                <strong>Note:</strong> Dashboards are displayed within this application, giving you full control over the visualization and the ability to aggregate data from multiple sources in the future.
+              </p>
+            </div>
           </div>
         </div>
       </div>

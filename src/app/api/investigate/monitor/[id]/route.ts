@@ -55,9 +55,6 @@ export async function POST(
       success: true,
       investigation: result.investigation,
       dashboard: result.dashboard,
-      dashboardUrl: result.dashboard?.id 
-        ? `https://dd.datad0g.com/dashboard/${result.dashboard.id}`
-        : undefined,
     });
 
   } catch (error) {
