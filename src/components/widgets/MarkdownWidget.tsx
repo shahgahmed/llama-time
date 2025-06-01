@@ -10,14 +10,6 @@ interface MarkdownWidgetProps {
 
 export default function MarkdownWidget({ title, data, config }: MarkdownWidgetProps) {
   const content = data?.content || config.content || 'No content available for this widget.';
-  
-  // Debug log to see what content we're getting
-  console.log('MarkdownWidget content:', { 
-    title, 
-    dataContent: data?.content, 
-    configContent: config.content,
-    finalContent: content.substring(0, 100) + '...'
-  });
 
   return (
     <div className="h-full flex flex-col">

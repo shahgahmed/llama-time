@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Navigation() {
   return (
@@ -7,30 +8,42 @@ export default function Navigation() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-6">
             <Link href="/" className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-[#238636] rounded-md flex items-center justify-center">
-                <span className="text-white text-sm font-medium">L</span>
+              <div className="w-8 h-8 rounded-md flex items-center justify-center">
+                <Image
+                  src="/images/logos/logo.png"
+                  alt="Centaur SRE Logo"
+                  width={32}
+                  height={32}
+                  className="rounded-md"
+                />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-gray-100">Llama Time</h1>
+                <h1 className="text-lg font-semibold text-gray-100">Centaur SRE</h1>
               </div>
             </Link>
             
             <div className="flex items-center space-x-4">
               <Link 
                 href="/" 
-                className="text-sm text-gray-300 hover:text-white transition-colors"
+                className="text-sm text-gray-300 hover:text-white transition-colors font-medium"
+              >
+                Integrations
+              </Link>
+              <Link 
+                href="/chat" 
+                className="text-sm text-gray-300 hover:text-white transition-colors font-medium"
               >
                 Chat
               </Link>
               <Link 
                 href="/datadog" 
-                className="text-sm text-gray-300 hover:text-white transition-colors"
+                className="text-sm text-gray-300 hover:text-white transition-colors font-medium"
               >
                 Datadog Monitor
               </Link>
               <Link 
                 href="/investigate" 
-                className="text-sm text-gray-300 hover:text-white transition-colors"
+                className="text-sm text-gray-300 hover:text-white transition-colors font-medium"
               >
                 AI Investigation
               </Link>

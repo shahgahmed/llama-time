@@ -1,17 +1,20 @@
-# 🦙 Llama API Tester
+# 🏛️ Centaur SRE
 
-A modern Next.js application for testing the Llama-4-Maverick-17B-128E-Instruct-FP8 API with a beautiful chat interface supporting both text and image inputs.
+A modern Next.js application for Site Reliability Engineering operations, featuring an AI-powered chat interface with Llama-4-Maverick-17B-128E-Instruct-FP8 API integration, supporting both text and image analysis for comprehensive system monitoring and incident response.
 
 ## Features
 
 - 🎨 Modern, responsive chat UI built with Tailwind CSS
-- 🔄 Real-time conversation with Llama API
-- 🖼️ **Image upload and analysis** - Drag & drop or click to upload images
-- 👁️ **Vision capabilities** - Ask questions about uploaded images
+- 🔄 Real-time conversation with Llama API for SRE tasks
+- 🖼️ **Image upload and analysis** - Drag & drop or click to upload system diagrams, charts, and screenshots
+- 👁️ **Vision capabilities** - Ask questions about uploaded system visualizations and monitoring dashboards
 - 📊 Display API metrics (tokens used, etc.)
-- ⚡ Fast API responses with proper error handling
+- ⚡ Fast API responses with proper error handling for critical SRE operations
 - 🛡️ Environment variable security for API keys
-- 📱 Mobile-friendly responsive design
+- 📱 Mobile-friendly responsive design for on-call engineers
+- 🔍 **AI Investigation** - Intelligent analysis for incident response
+- 📈 **Datadog Integration** - Monitor system health and performance
+- ⚙️ **System Integrations** - Connect with various SRE tools and platforms
 
 ## Quick Start
 

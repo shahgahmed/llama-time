@@ -40,9 +40,18 @@ export async function POST(
       );
     }
 
+    // Parse request body for options
+    let useManualContext = true; // Default to true
+    try {
+      const body = await request.json();
+      useManualContext = body.useManualContext ?? true;
+    } catch {
+      // If no body or invalid JSON, use default
+    }
+
     // Create AI operator and investigate
     const aiOperator = new AIOperator();
-    const result = await aiOperator.investigateAndCreateDashboard(monitorId);
+    const result = await aiOperator.investigateAndCreateDashboard(monitorId, { useManualContext });
 
     if (result.error) {
       return NextResponse.json(
@@ -55,6 +64,12 @@ export async function POST(
       success: true,
       investigation: result.investigation,
       dashboard: result.dashboard,
+      tokenUsage: {
+        contextTokens: result.contextTokens,
+        responseTokens: result.responseTokens,
+        totalTokens: result.totalTokens,
+        contextSources: result.contextSources,
+      },
     });
 
   } catch (error) {

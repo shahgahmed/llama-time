@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Navigation from '@/components/Navigation';
 import Link from 'next/link';
 
@@ -124,7 +125,19 @@ const integrations: Integration[] = [
   }
 ];
 
-export default function Home() {
+export default function IntegrationsPage() {
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  const categories = ['all', 'monitoring', 'logging', 'apm', 'infrastructure', 'security'];
+  
+  const filteredIntegrations = integrations.filter(integration => {
+    const matchesCategory = selectedCategory === 'all' || integration.category === selectedCategory;
+    return matchesCategory;
+  });
+
+  const connectedCount = integrations.filter(i => i.status === 'connected').length;
+  const availableCount = integrations.filter(i => i.status === 'available').length;
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a]">
       {/* Navigation */}
@@ -136,15 +149,26 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-50 tracking-tight">
-                Bespoke Dashboards for Your Incidents
+                Integrations
               </h1>
               <p className="text-gray-600 dark:text-gray-400 max-w-2xl">
-                Create custom incident dashboards that pull data from all your monitoring tools. 
-                Get unified visibility and faster resolution with AI-powered insights tailored to each incident.
+                Connect your observability platforms to create unified dashboards and streamline incident investigation across all your monitoring tools.
               </p>
             </div>
             
             <div className="flex items-center gap-6">
+              <div className="text-right">
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {connectedCount}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">Connected</div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {availableCount}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">Available</div>
+              </div>
               <Link
                 href="/investigate"
                 className="inline-flex items-center gap-2 bg-[#FEC601] hover:bg-[#E6B301] text-black px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
@@ -156,16 +180,47 @@ export default function Home() {
               </Link>
             </div>
           </div>
+
+          {/* Filters */}
+          <div className="mt-8 flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                    selectedCategory === category
+                      ? 'bg-[#FEC601] text-black shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Integration Grid */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {integrations.map((integration) => (
+          {filteredIntegrations.map((integration) => (
             <IntegrationCard key={integration.id} integration={integration} />
           ))}
         </div>
+
+        {filteredIntegrations.length === 0 && (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No integrations found</h3>
+            <p className="text-gray-600 dark:text-gray-400">Try adjusting your search or filter criteria.</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -258,4 +313,4 @@ function IntegrationCard({ integration }: { integration: Integration }) {
       </div>
     </div>
   );
-}
+} 

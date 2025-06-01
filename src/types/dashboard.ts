@@ -7,6 +7,12 @@ export interface Dashboard {
   monitorId?: number;
   widgets: Widget[];
   timeRange: TimeRange;
+  tokenUsage?: {
+    contextTokens: number;
+    responseTokens: number;
+    totalTokens: number;
+    contextSources: string[];
+  };
 }
 
 export interface TimeRange {

@@ -81,12 +81,12 @@ export default function DatadogMonitorPage() {
                 value={monitorId}
                 onChange={(e) => setMonitorId(e.target.value)}
                 placeholder="Enter Monitor ID"
-                className="flex-1 px-4 py-2 bg-[#0d1117] border border-gray-700 rounded-lg text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-[#238636] focus:border-transparent"
+                className="flex-1 px-4 py-2 bg-[#0d1117] border border-gray-700 rounded-lg text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-[#3b82f6] focus:border-transparent"
               />
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-2 bg-[#238636] hover:bg-[#2ea043] disabled:bg-gray-700 disabled:text-gray-400 text-white rounded-lg transition-colors"
+                className="px-6 py-2 bg-[#3b82f6] hover:bg-[#2563eb] disabled:bg-gray-700 disabled:text-gray-400 text-white rounded-lg transition-colors"
               >
                 {loading ? 'Loading...' : 'Fetch Monitor'}
               </button>
@@ -165,7 +165,7 @@ export default function DatadogMonitorPage() {
                       {monitorData.tags.map((tag, index) => (
                         <span
                           key={index}
-                          className="px-2 py-1 bg-[#238636]/20 text-[#7ee787] border border-[#238636]/30 rounded text-sm"
+                          className="px-2 py-1 bg-[#3b82f6]/20 text-[#60a5fa] border border-[#3b82f6]/30 rounded text-sm"
                         >
                           {tag}
                         </span>

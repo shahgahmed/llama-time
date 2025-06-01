@@ -9,13 +9,20 @@ interface InvestigationResult {
   success: boolean;
   investigation: string;
   dashboard?: Dashboard;
+  tokenUsage?: {
+    contextTokens: number;
+    responseTokens: number;
+    totalTokens: number;
+    contextSources: string[];
+  };
 }
 
 export default function InvestigatePage() {
-  const [monitorId, setMonitorId] = useState('');
+  const [monitorId, setMonitorId] = useState('20829685');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<InvestigationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [useManualContext, setUseManualContext] = useState(true);
   const router = useRouter();
 
   const investigateMonitor = async (e: React.FormEvent) => {
@@ -33,6 +40,12 @@ export default function InvestigatePage() {
     try {
       const response = await fetch(`/api/investigate/monitor/${monitorId}`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          useManualContext,
+        }),
       });
       
       const data = await response.json();
@@ -45,7 +58,12 @@ export default function InvestigatePage() {
       
       // Store dashboard in localStorage for viewing
       if (data.dashboard) {
-        localStorage.setItem(`dashboard-${data.dashboard.id}`, JSON.stringify(data.dashboard));
+        // Add token usage to dashboard if available
+        const dashboardWithTokens = {
+          ...data.dashboard,
+          tokenUsage: data.tokenUsage
+        };
+        localStorage.setItem(`dashboard-${data.dashboard.id}`, JSON.stringify(dashboardWithTokens));
         
         // Automatically redirect to the dashboard
         router.push(`/dashboard/${data.dashboard.id}`);
@@ -78,31 +96,63 @@ export default function InvestigatePage() {
 
           {/* Search Form */}
           <form onSubmit={investigateMonitor} className="mb-8">
-            <div className="flex gap-4">
-              <input
-                type="text"
-                value={monitorId}
-                onChange={(e) => setMonitorId(e.target.value)}
-                placeholder="Enter Monitor ID"
-                className="flex-1 px-4 py-2 bg-[#0d1117] border border-gray-700 rounded-lg text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-[#238636] focus:border-transparent"
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-2 bg-[#238636] hover:bg-[#2ea043] disabled:bg-gray-700 disabled:text-gray-400 text-white rounded-lg transition-colors min-w-[160px]"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            <div className="space-y-4">
+              <div className="flex gap-4">
+                <input
+                  type="text"
+                  value={monitorId}
+                  onChange={(e) => setMonitorId(e.target.value)}
+                  placeholder="Enter Monitor ID"
+                  className="flex-1 px-4 py-2 bg-[#0d1117] border border-gray-700 rounded-md text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-[#FEC601] focus:border-transparent"
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-2 bg-[#FEC601] hover:bg-[#E6B301] disabled:bg-gray-700 disabled:text-gray-400 text-black rounded-md font-semibold transition-all duration-200 min-w-[160px] shadow-sm hover:shadow-md disabled:shadow-none"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Investigating...
+                    </span>
+                  ) : (
+                    'Investigate & Create Dashboard'
+                  )}
+                </button>
+              </div>
+              
+              {/* Beautiful Toggle for Manual Context */}
+              <div className="flex items-center justify-between p-4 bg-[#161b22] border border-gray-800 rounded-md">
+                <div className="flex items-center space-x-3">
+                  <div className="flex-shrink-0">
+                    <svg className="w-5 h-5 text-[#FEC601]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    Investigating...
-                  </span>
-                ) : (
-                  'Investigate & Create Dashboard'
-                )}
-              </button>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-100">Include Runbooks & Playbooks</div>
+                    <div className="text-xs text-gray-400">Add local context for enhanced AI analysis</div>
+                  </div>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => setUseManualContext(!useManualContext)}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#FEC601] focus:ring-offset-2 focus:ring-offset-[#0d1117] ${
+                    useManualContext ? 'bg-[#FEC601]' : 'bg-gray-600'
+                  }`}
+                >
+                  <span className="sr-only">Include manual context</span>
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      useManualContext ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
           </form>
 
@@ -117,7 +167,7 @@ export default function InvestigatePage() {
           {result && (
             <div className="space-y-6">
               {/* Investigation Notes */}
-              <div className="bg-[#161b22] border border-gray-800 rounded-lg p-6">
+              <div className="bg-[#161b22] border border-gray-800 rounded-md p-6">
                 <h2 className="text-xl font-semibold text-gray-100 mb-4">Investigation Analysis</h2>
                 <div className="prose prose-invert max-w-none">
                   <pre className="whitespace-pre-wrap text-gray-300 text-sm leading-relaxed font-sans">
@@ -128,7 +178,7 @@ export default function InvestigatePage() {
 
               {/* Dashboard Info */}
               {result.dashboard && (
-                <div className="bg-[#161b22] border border-gray-800 rounded-lg p-6">
+                <div className="bg-[#161b22] border border-gray-800 rounded-md p-6">
                   <h2 className="text-xl font-semibold text-gray-100 mb-4">Generated Dashboard</h2>
                   
                   <div className="space-y-3">
@@ -154,7 +204,7 @@ export default function InvestigatePage() {
                     <div className="pt-4">
                       <button
                         onClick={viewDashboard}
-                        className="inline-flex items-center px-4 py-2 bg-[#238636] hover:bg-[#2ea043] text-white rounded-lg transition-colors"
+                        className="inline-flex items-center px-4 py-2 bg-[#FEC601] hover:bg-[#E6B301] text-black rounded-md font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
                       >
                         View Dashboard
                         <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,12 +218,12 @@ export default function InvestigatePage() {
 
               {/* Widget Details */}
               {result.dashboard && (
-                <details className="bg-[#161b22] border border-gray-800 rounded-lg">
+                <details className="bg-[#161b22] border border-gray-800 rounded-md">
                   <summary className="px-6 py-4 cursor-pointer text-gray-300 hover:text-gray-100">
                     View Dashboard Configuration
                   </summary>
                   <div className="px-6 pb-6">
-                    <pre className="mt-2 p-4 bg-[#0d1117] border border-gray-800 rounded text-xs text-gray-300 overflow-x-auto">
+                    <pre className="mt-2 p-4 bg-[#0d1117] border border-gray-800 rounded-md text-xs text-gray-300 overflow-x-auto">
                       {JSON.stringify(result.dashboard, null, 2)}
                     </pre>
                   </div>
@@ -183,7 +233,7 @@ export default function InvestigatePage() {
           )}
 
           {/* Help Section */}
-          <div className="mt-12 p-6 bg-[#161b22] border border-gray-800 rounded-lg">
+          <div className="mt-12 p-6 bg-[#161b22] border border-gray-800 rounded-md">
             <h3 className="text-lg font-semibold text-gray-100 mb-2">How it works</h3>
             <ol className="list-decimal list-inside space-y-2 text-gray-300 text-sm">
               <li>Enter a Datadog monitor ID from a firing alert</li>
@@ -193,8 +243,8 @@ export default function InvestigatePage() {
               <li>Use the dashboard to investigate and resolve the incident</li>
             </ol>
             
-            <div className="mt-4 p-3 bg-blue-900/20 border border-blue-800/30 rounded">
-              <p className="text-blue-300 text-sm">
+            <div className="mt-4 p-3 bg-[#FEC601]/10 border border-[#FEC601]/30 rounded-md">
+              <p className="text-[#FEC601] text-sm">
                 <strong>Note:</strong> Dashboards are displayed within this application, giving you full control over the visualization and the ability to aggregate data from multiple sources in the future.
               </p>
             </div>

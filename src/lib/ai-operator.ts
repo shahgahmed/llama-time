@@ -6,6 +6,27 @@ import { LlamaApiResponse } from '@/types/llama';
 import { AIDashboardDesign, AIWidgetDesign } from '@/types/ai-dashboard';
 import { v4 as uuidv4 } from 'uuid';
 
+interface TokenUsage {
+  contextTokens: number;
+  responseTokens: number;
+  totalTokens: number;
+  contextSources: string[];
+}
+
+interface InvestigationOptions {
+  useManualContext?: boolean;
+}
+
+interface InvestigationResult {
+  investigation: string;
+  dashboard?: Dashboard;
+  error?: string;
+  contextTokens?: number;
+  responseTokens?: number;
+  totalTokens?: number;
+  contextSources?: string[];
+}
+
 export class AIOperator {
   private datadogClient: DatadogClient;
   private llamaApiKey: string;
@@ -16,27 +37,24 @@ export class AIOperator {
     this.datadogClient = new DatadogClient(config);
   }
 
-  async investigateAndCreateDashboard(monitorId: number): Promise<{
-    investigation: string;
-    dashboard?: Dashboard;
-    error?: string;
-  }> {
+  async investigateAndCreateDashboard(monitorId: number, options: InvestigationOptions = {}): Promise<InvestigationResult> {
     try {
       // First, get the monitor details
       const monitor = await this.datadogClient.request<Monitor>(`/api/v1/monitor/${monitorId}`);
       
-      // Use AI to design a bespoke dashboard
-      const dashboardDesign = await this.designDashboardWithAI(monitor);
+      // Use AI to design a bespoke dashboard with token tracking
+      const { design, tokenUsage } = await this.designDashboardWithAI(monitor, options);
       
       // Generate the dashboard based on AI recommendations
-      const dashboard = await this.createDashboardFromAIDesign(monitor, dashboardDesign);
+      const dashboard = await this.createDashboardFromAIDesign(monitor, design, tokenUsage);
       
-      // Create investigation notes
-      const investigationNotes = dashboardDesign.investigation || 'Investigation in progress...';
-
       return {
-        investigation: investigationNotes,
+        investigation: design.investigation || 'Investigation in progress...',
         dashboard,
+        contextTokens: tokenUsage.contextTokens,
+        responseTokens: tokenUsage.responseTokens,
+        totalTokens: tokenUsage.totalTokens,
+        contextSources: tokenUsage.contextSources,
       };
     } catch (error) {
       console.error('Error in AI investigation:', error);
@@ -47,8 +65,9 @@ export class AIOperator {
     }
   }
 
-  private async designDashboardWithAI(monitor: Monitor): Promise<AIDashboardDesign> {
-    const designPrompt = `You are an expert Site Reliability Engineer designing a dashboard to investigate a firing monitor.
+  private async designDashboardWithAI(monitor: Monitor, options: InvestigationOptions = {}): Promise<{ design: AIDashboardDesign; tokenUsage: TokenUsage }> {
+    const contextSources = ['Monitor Details'];
+    let designPrompt = `You are an expert Site Reliability Engineer designing a dashboard to investigate a firing monitor.
 
 Monitor Details:
 - Name: ${monitor.name}
@@ -75,7 +94,23 @@ Based on this monitor, design a dashboard that will help investigate the issue. 
 1. What metrics are most relevant to this alert?
 2. What logs would help diagnose the problem?
 3. What related systems should be monitored?
-4. What's the best way to visualize each piece of data?
+4. What's the best way to visualize each piece of data?`;
+
+    // Add manual context if provided via environment variable and enabled
+    const manualContext = process.env.LLAMA_MANUAL_CONTEXT;
+    if (options.useManualContext !== false && manualContext && manualContext.trim()) {
+      contextSources.push('Manual Context');
+      designPrompt += `
+
+Additional Context (Manual):
+${manualContext.trim()}
+
+Please incorporate this additional context into your analysis and dashboard design.`;
+    } else if (options.useManualContext === false && manualContext && manualContext.trim()) {
+      contextSources.push('Manual Context (Skipped)');
+    }
+
+    designPrompt += `
 
 Respond with a JSON object containing:
 {
@@ -95,30 +130,56 @@ Respond with a JSON object containing:
   "time_range": "recommended time range (e.g., '1h', '24h', '7d')"
 }`;
 
+    // Estimate context tokens (rough approximation: 4 chars = 1 token)
+    const contextTokens = Math.ceil(designPrompt.length / 4);
+
     try {
       const response = await this.callLlamaAPI(designPrompt);
       const content = response.completion_message?.content?.text || '{}';
       
+      // Extract token usage from metrics
+      const responseTokens = response.metrics?.find(m => m.metric === 'completion_tokens')?.value || 0;
+      const totalTokens = contextTokens + responseTokens;
+      
       // Try to parse the JSON response
+      let design: AIDashboardDesign;
       try {
-        return JSON.parse(content);
+        design = JSON.parse(content);
       } catch {
         // If parsing fails, extract JSON from the response
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
+          design = JSON.parse(jsonMatch[0]);
+        } else {
+          // Fallback to a default design
+          design = this.getDefaultDashboardDesign(monitor);
         }
-        
-        // Fallback to a default design
-        return this.getDefaultDashboardDesign(monitor);
       }
+      
+      return {
+        design,
+        tokenUsage: {
+          contextTokens,
+          responseTokens,
+          totalTokens,
+          contextSources,
+        }
+      };
     } catch (error) {
       console.error('Error getting AI dashboard design:', error);
-      return this.getDefaultDashboardDesign(monitor);
+      return {
+        design: this.getDefaultDashboardDesign(monitor),
+        tokenUsage: {
+          contextTokens,
+          responseTokens: 0,
+          totalTokens: contextTokens,
+          contextSources,
+        }
+      };
     }
   }
 
-  private async createDashboardFromAIDesign(monitor: Monitor, design: AIDashboardDesign): Promise<Dashboard> {
+  private async createDashboardFromAIDesign(monitor: Monitor, design: AIDashboardDesign, tokenUsage: TokenUsage): Promise<Dashboard> {
     const now = Date.now();
     const timeRangeMap: Record<string, number> = {
       '1h': 60 * 60 * 1000,
@@ -147,6 +208,7 @@ Respond with a JSON object containing:
       monitorId: monitor.id,
       widgets: [],
       timeRange,
+      tokenUsage,
     };
 
     // Always add the monitor status first
@@ -168,6 +230,19 @@ Respond with a JSON object containing:
     
     if (design.widgets && Array.isArray(design.widgets)) {
       design.widgets.forEach((widgetDesign: AIWidgetDesign) => {
+        // Skip any investigation/guide/notes widgets from AI to prevent duplicates
+        const isInvestigationWidget = widgetDesign.title && (
+          widgetDesign.title.toLowerCase().includes('investigation') ||
+          widgetDesign.title.toLowerCase().includes('guide') ||
+          widgetDesign.title.toLowerCase().includes('notes') ||
+          widgetDesign.title.toLowerCase().includes('playbook') ||
+          widgetDesign.title.toLowerCase().includes('runbook')
+        );
+        
+        if (isInvestigationWidget) {
+          return; // Skip this widget
+        }
+        
         const widget = this.createWidgetFromDesign(widgetDesign, currentX, currentY);
         if (widget) {
           dashboard.widgets.push(widget);
@@ -176,7 +251,7 @@ Respond with a JSON object containing:
           currentX += widget.layout.width;
           if (currentX >= 12) {
             currentX = 0;
-            currentY = Math.max(currentY + 1, 2); // Move to next row, accounting for monitor status
+            currentY = Math.max(currentY + 1, 0); // Move to next row, accounting for monitor status
           }
         }
       });
